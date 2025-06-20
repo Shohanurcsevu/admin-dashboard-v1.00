@@ -1,0 +1,125 @@
+<?php
+require_once '../subject/db_connect.php';
+
+$action = isset($_GET['action']) ? $_GET['action'] : 'list';
+
+switch ($action) {
+    case 'list':
+        list_topics($conn);
+        break;
+    case 'create':
+        create_topic($conn);
+        break;
+    case 'get_single':
+        get_topic($conn);
+        break;
+    case 'update':
+        update_topic($conn);
+        break;
+    case 'delete':
+        delete_topic($conn);
+        break;
+    default:
+        echo json_encode(['success' => false, 'message' => 'Invalid action for topics.']);
+        break;
+}
+
+function list_topics($conn) {
+    $subject_id = isset($_GET['subject_id']) ? intval($_GET['subject_id']) : 0;
+    $lesson_id = isset($_GET['lesson_id']) ? intval($_GET['lesson_id']) : 0;
+
+    // --- MODIFIED: Added LEFT JOIN and COUNT to get created_exams ---
+    $sql = "SELECT t.*, s.subject_name, l.lesson_name, COUNT(e.id) as created_exams
+            FROM topics t 
+            JOIN subjects s ON t.subject_id = s.id 
+            JOIN lessons l ON t.lesson_id = l.id
+            LEFT JOIN exams e ON t.id = e.topic_id";
+    
+    $params = [];
+    $types = '';
+    $where_clauses = [];
+
+    if ($subject_id > 0) {
+        $where_clauses[] = "t.subject_id = ?";
+        $params[] = $subject_id;
+        $types .= 'i';
+    }
+    if ($lesson_id > 0) {
+        $where_clauses[] = "t.lesson_id = ?";
+        $params[] = $lesson_id;
+        $types .= 'i';
+    }
+
+    if (!empty($where_clauses)) {
+        $sql .= " WHERE " . implode(' AND ', $where_clauses);
+    }
+    
+    // --- MODIFIED: Added GROUP BY ---
+    $sql .= " GROUP BY t.id ORDER BY t.id ASC";
+    
+    $stmt = $conn->prepare($sql);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $topics = [];
+    while ($row = $result->fetch_assoc()) {
+        $topics[] = $row;
+    }
+    
+    echo json_encode(['success' => true, 'data' => $topics]);
+    $stmt->close();
+}
+
+function get_topic($conn) {
+    $id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    $stmt = $conn->prepare("SELECT * FROM topics WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $topic = $result->fetch_assoc();
+    echo json_encode(['success' => true, 'data' => $topic]);
+    $stmt->close();
+}
+
+function create_topic($conn) {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $stmt = $conn->prepare("INSERT INTO topics (subject_id, lesson_id, topic_name, start_page, end_page, expected_exams) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("iisiii", $data['subject_id'], $data['lesson_id'], $data['topic_name'], $data['start_page'], $data['end_page'], $data['expected_exams']);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Topic created successfully.']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to create topic.']);
+    }
+    $stmt->close();
+}
+
+function update_topic($conn) {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $stmt = $conn->prepare("UPDATE topics SET subject_id = ?, lesson_id = ?, topic_name = ?, start_page = ?, end_page = ?, expected_exams = ? WHERE id = ?");
+    $stmt->bind_param("iisiiii", $data['subject_id'], $data['lesson_id'], $data['topic_name'], $data['start_page'], $data['end_page'], $data['expected_exams'], $data['id']);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Topic updated successfully.']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to update topic.']);
+    }
+    $stmt->close();
+}
+
+function delete_topic($conn) {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $id = intval($data['id']);
+    $stmt = $conn->prepare("DELETE FROM topics WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true, 'message' => 'Topic deleted successfully.']);
+    } else {
+        echo json_encode(['success' => false, 'message' => 'Failed to delete topic.']);
+    }
+    $stmt->close();
+}
+
+$conn->close();
+?>
