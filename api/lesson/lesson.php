@@ -94,19 +94,85 @@ function create_lesson($conn) {
     $stmt->close();
 }
 
+// function update_lesson($conn) {
+//     $data = json_decode(file_get_contents('php://input'), true);
+//     $stmt = $conn->prepare("UPDATE lessons SET subject_id = ?, lesson_name = ?, expected_topics = ?, start_page = ?, end_page = ?, py_bcs_ques = ? WHERE id = ?");
+//     $stmt->bind_param("isiiiii", $data['subject_id'], $data['lesson_name'], $data['expected_topics'], $data['start_page'], $data['end_page'], $data['py_bcs_ques'], $data['id']);
+//     if ($stmt->execute()) {
+//          $message = "Lesson '" . $data['lesson_name'] . "' was updated successfully.";
+//         log_activity($conn, 'Lesson Updated', $message);
+//         echo json_encode(['success' => true, 'message' => 'Lesson updated successfully.']);
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Failed to update lesson.']);
+//     }
+//     $stmt->close();
+// }
 function update_lesson($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
+
+    // ✅ Step 1: Fetch original lesson data
+    $stmt_select = $conn->prepare("SELECT * FROM lessons WHERE id = ?");
+    $stmt_select->bind_param("i", $data['id']);
+    $stmt_select->execute();
+    $result = $stmt_select->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Lesson not found.']);
+        return;
+    }
+
+    $original = $result->fetch_assoc();
+    $stmt_select->close();
+
+    // ✅ Step 2: Perform the update
     $stmt = $conn->prepare("UPDATE lessons SET subject_id = ?, lesson_name = ?, expected_topics = ?, start_page = ?, end_page = ?, py_bcs_ques = ? WHERE id = ?");
-    $stmt->bind_param("isiiiii", $data['subject_id'], $data['lesson_name'], $data['expected_topics'], $data['start_page'], $data['end_page'], $data['py_bcs_ques'], $data['id']);
+    $stmt->bind_param(
+        "isiiiii",
+        $data['subject_id'],
+        $data['lesson_name'],
+        $data['expected_topics'],
+        $data['start_page'],
+        $data['end_page'],
+        $data['py_bcs_ques'],
+        $data['id']
+    );
+
     if ($stmt->execute()) {
-         $message = "Lesson '" . $data['lesson_name'] . "' was updated successfully.";
-        log_activity($conn, 'Lesson Updated', $message);
+        // ✅ Step 3: Compare fields and prepare log message
+        $changes = [];
+
+        if ($data['lesson_name'] !== $original['lesson_name']) {
+            $changes[] = "Name: '" . $original['lesson_name'] . "' → '" . $data['lesson_name'] . "'";
+        }
+        if ($data['subject_id'] != $original['subject_id']) {
+            $changes[] = "Subject ID: " . $original['subject_id'] . " → " . $data['subject_id'];
+        }
+        if ($data['expected_topics'] != $original['expected_topics']) {
+            $changes[] = "Expected Topics: " . $original['expected_topics'] . " → " . $data['expected_topics'];
+        }
+        if ($data['start_page'] != $original['start_page']) {
+            $changes[] = "Start Page: " . $original['start_page'] . " → " . $data['start_page'];
+        }
+        if ($data['end_page'] != $original['end_page']) {
+            $changes[] = "End Page: " . $original['end_page'] . " → " . $data['end_page'];
+        }
+        if ($data['py_bcs_ques'] != $original['py_bcs_ques']) {
+            $changes[] = "Previous BCS Questions: " . $original['py_bcs_ques'] . " → " . $data['py_bcs_ques'];
+        }
+
+        if (!empty($changes)) {
+            $message = "Lesson '" . $original['lesson_name'] . "' (ID: " . $original['id'] . ") updated. Changes: " . implode("; ", $changes) . ".";
+            log_activity($conn, 'Lesson Updated', $message);
+        }
+
         echo json_encode(['success' => true, 'message' => 'Lesson updated successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to update lesson.']);
     }
+
     $stmt->close();
 }
+
 
 function delete_lesson($conn) {
     $data = json_decode(file_get_contents('php://input'), true);

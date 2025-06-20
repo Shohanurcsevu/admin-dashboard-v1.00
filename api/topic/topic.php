@@ -106,20 +106,87 @@ function create_topic($conn) {
     $stmt->close();
 }
 
+// function update_topic($conn) {
+//     $data = json_decode(file_get_contents('php://input'), true);
+//     $stmt = $conn->prepare("UPDATE topics SET subject_id = ?, lesson_id = ?, topic_name = ?, start_page = ?, end_page = ?, expected_exams = ? WHERE id = ?");
+//     $stmt->bind_param("iisiiii", $data['subject_id'], $data['lesson_id'], $data['topic_name'], $data['start_page'], $data['end_page'], $data['expected_exams'], $data['id']);
+//     if ($stmt->execute()) {
+//             // --- NEW: Log this activity ---
+//        $message = "Topic '" . $data['topic_name'] . "' has been updated successfully.";
+//         log_activity($conn, 'Topic Updated', $message);
+//         echo json_encode(['success' => true, 'message' => 'Topic updated successfully.']);
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Failed to update topic.']);
+//     }
+//     $stmt->close();
+// }
 function update_topic($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
+
+    // ✅ Step 1: Fetch original topic data
+    $stmt_select = $conn->prepare("SELECT * FROM topics WHERE id = ?");
+    $stmt_select->bind_param("i", $data['id']);
+    $stmt_select->execute();
+    $result = $stmt_select->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Topic not found.']);
+        return;
+    }
+
+    $original = $result->fetch_assoc();
+    $stmt_select->close();
+
+    // ✅ Step 2: Perform the update
     $stmt = $conn->prepare("UPDATE topics SET subject_id = ?, lesson_id = ?, topic_name = ?, start_page = ?, end_page = ?, expected_exams = ? WHERE id = ?");
-    $stmt->bind_param("iisiiii", $data['subject_id'], $data['lesson_id'], $data['topic_name'], $data['start_page'], $data['end_page'], $data['expected_exams'], $data['id']);
+    $stmt->bind_param(
+        "iisiiii",
+        $data['subject_id'],
+        $data['lesson_id'],
+        $data['topic_name'],
+        $data['start_page'],
+        $data['end_page'],
+        $data['expected_exams'],
+        $data['id']
+    );
+
     if ($stmt->execute()) {
-            // --- NEW: Log this activity ---
-       $message = "Topic '" . $data['topic_name'] . "' has been updated successfully.";
-        log_activity($conn, 'Topic Updated', $message);
+        // ✅ Step 3: Compare fields and build change message
+        $changes = [];
+
+        if ($data['topic_name'] !== $original['topic_name']) {
+            $changes[] = "Name: '" . $original['topic_name'] . "' → '" . $data['topic_name'] . "'";
+        }
+        if ($data['subject_id'] != $original['subject_id']) {
+            $changes[] = "Subject ID: " . $original['subject_id'] . " → " . $data['subject_id'];
+        }
+        if ($data['lesson_id'] != $original['lesson_id']) {
+            $changes[] = "Lesson ID: " . $original['lesson_id'] . " → " . $data['lesson_id'];
+        }
+        if ($data['start_page'] != $original['start_page']) {
+            $changes[] = "Start Page: " . $original['start_page'] . " → " . $data['start_page'];
+        }
+        if ($data['end_page'] != $original['end_page']) {
+            $changes[] = "End Page: " . $original['end_page'] . " → " . $data['end_page'];
+        }
+        if ($data['expected_exams'] != $original['expected_exams']) {
+            $changes[] = "Expected Exams: " . $original['expected_exams'] . " → " . $data['expected_exams'];
+        }
+
+        // ✅ Step 4: Log if any changes occurred
+        if (!empty($changes)) {
+            $message = "Topic '" . $original['topic_name'] . "' (ID: " . $original['id'] . ") updated. Changes: " . implode("; ", $changes) . ".";
+            log_activity($conn, 'Topic Updated', $message);
+        }
+
         echo json_encode(['success' => true, 'message' => 'Topic updated successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to update topic.']);
     }
+
     $stmt->close();
 }
+
 
 // function delete_topic($conn) {
 //     $data = json_decode(file_get_contents('php://input'), true);

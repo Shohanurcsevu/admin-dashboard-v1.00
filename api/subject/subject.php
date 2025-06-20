@@ -90,22 +90,93 @@ function create_subject($conn) {
 }
 
 // Function to update an existing subject
+// function update_subject($conn) {
+//     $data = json_decode(file_get_contents('php://input'), true);
+    
+//     $stmt = $conn->prepare("UPDATE subjects SET subject_name = ?, book_name = ?, total_lessons = ?, total_pages = ?, start_date = ?, end_date = ?, category = ? WHERE id = ?");
+//     $stmt->bind_param("ssiisssi", $data['subject_name'], $data['book_name'], $data['total_lessons'], $data['total_pages'], $data['start_date'], $data['end_date'], $data['category'], $data['id']);
+    
+//     if ($stmt->execute()) {
+//         // --- NEW: Log this activity ---
+//         $message = "'" . $data['subject_name'] . "' has been updated successfully.";
+//         log_activity($conn, 'Subject Updated', $message);
+//         echo json_encode(['success' => true, 'message' => 'Subject updated successfully.']);
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
+//     }
+//     $stmt->close();
+// }
+
 function update_subject($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
-    
+
+    // ✅ Step 1: Fetch original subject data
+    $stmt_select = $conn->prepare("SELECT * FROM subjects WHERE id = ?");
+    $stmt_select->bind_param("i", $data['id']);
+    $stmt_select->execute();
+    $result = $stmt_select->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Subject not found.']);
+        return;
+    }
+
+    $original = $result->fetch_assoc();
+    $stmt_select->close();
+
+    // ✅ Step 2: Perform the update
     $stmt = $conn->prepare("UPDATE subjects SET subject_name = ?, book_name = ?, total_lessons = ?, total_pages = ?, start_date = ?, end_date = ?, category = ? WHERE id = ?");
-    $stmt->bind_param("ssiisssi", $data['subject_name'], $data['book_name'], $data['total_lessons'], $data['total_pages'], $data['start_date'], $data['end_date'], $data['category'], $data['id']);
-    
+    $stmt->bind_param(
+        "ssiisssi",
+        $data['subject_name'],
+        $data['book_name'],
+        $data['total_lessons'],
+        $data['total_pages'],
+        $data['start_date'],
+        $data['end_date'],
+        $data['category'],
+        $data['id']
+    );
+
     if ($stmt->execute()) {
-        // --- NEW: Log this activity ---
-        $message = "'" . $data['subject_name'] . "' has been updated successfully.";
-        log_activity($conn, 'Subject Updated', $message);
+        // ✅ Step 3: Compare fields and prepare log message
+        $changes = [];
+
+        if ($data['subject_name'] !== $original['subject_name']) {
+            $changes[] = "Name: '" . $original['subject_name'] . "' → '" . $data['subject_name'] . "'";
+        }
+        if ($data['book_name'] !== $original['book_name']) {
+            $changes[] = "Book: '" . $original['book_name'] . "' → '" . $data['book_name'] . "'";
+        }
+        if ($data['total_lessons'] != $original['total_lessons']) {
+            $changes[] = "Lessons: " . $original['total_lessons'] . " → " . $data['total_lessons'];
+        }
+        if ($data['total_pages'] != $original['total_pages']) {
+            $changes[] = "Pages: " . $original['total_pages'] . " → " . $data['total_pages'];
+        }
+        if ($data['start_date'] !== $original['start_date']) {
+            $changes[] = "Start Date: " . $original['start_date'] . " → " . $data['start_date'];
+        }
+        if ($data['end_date'] !== $original['end_date']) {
+            $changes[] = "End Date: " . $original['end_date'] . " → " . $data['end_date'];
+        }
+        if ($data['category'] !== $original['category']) {
+            $changes[] = "Category: '" . $original['category'] . "' → '" . $data['category'] . "'";
+        }
+
+        if (!empty($changes)) {
+            $message = "Subject '" . $original['subject_name'] . "' (ID: " . $original['id'] . ") updated. Changes: " . implode("; ", $changes) . ".";
+            log_activity($conn, 'Subject Updated', $message);
+        }
+
         echo json_encode(['success' => true, 'message' => 'Subject updated successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
     }
+
     $stmt->close();
 }
+
 
 // Function to delete a subject
 // function delete_subject($conn) {

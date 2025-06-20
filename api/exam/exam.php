@@ -11,6 +11,13 @@ switch ($action) {
     case 'delete': delete_exam($conn); break;
     default: echo json_encode(['success' => false, 'message' => 'Invalid action for exams.']); break;
 }
+// Helper function to add to the activity log
+function log_activity($conn, $type, $message) {
+    $stmt = $conn->prepare("INSERT INTO activity_log (activity_type, activity_message) VALUES (?, ?)");
+    $stmt->bind_param("ss", $type, $message);
+    $stmt->execute();
+    $stmt->close();
+}
 
 function list_exams($conn) {
     // MODIFIED: Changed to LEFT JOINs to include exams with NULL IDs (custom exams)
@@ -88,6 +95,9 @@ function create_exam($conn) {
     $stmt = $conn->prepare("INSERT INTO exams (subject_id, lesson_id, topic_id, exam_title, duration, instructions, total_marks, pass_mark, negative_mark_value) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0.5)");
     $stmt->bind_param("iiisissd", $data['subject_id'], $data['lesson_id'], $data['topic_id'], $data['exam_title'], $data['duration'], $data['instructions'], $data['total_marks'], $data['pass_mark']);
     if ($stmt->execute()) {
+        // --- NEW: Log this activity ---
+        $message = "Exam '" . $data['exam_title'] . "' has been created successfully.";
+        log_activity($conn, 'Exam Created', $message);
         echo json_encode(['success' => true, 'message' => 'Exam created successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to create exam.']);
@@ -95,30 +105,153 @@ function create_exam($conn) {
     $stmt->close();
 }
 
+// function update_exam($conn) {
+//     $data = json_decode(file_get_contents('php://input'), true);
+//     $stmt = $conn->prepare("UPDATE exams SET subject_id = ?, lesson_id = ?, topic_id = ?, exam_title = ?, duration = ?, instructions = ?, total_marks = ?, pass_mark = ? WHERE id = ?");
+//     $stmt->bind_param("iiisissdi", $data['subject_id'], $data['lesson_id'], $data['topic_id'], $data['exam_title'], $data['duration'], $data['instructions'], $data['total_marks'], $data['pass_mark'], $data['id']);
+//     if ($stmt->execute()) {
+
+
+//         echo json_encode(['success' => true, 'message' => 'Exam updated successfully.']);
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Failed to update exam.']);
+//     }
+//     $stmt->close();
+// }
+
 function update_exam($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
+
+    // ✅ Step 1: Fetch original exam data
+    $stmt_select = $conn->prepare("SELECT * FROM exams WHERE id = ?");
+    $stmt_select->bind_param("i", $data['id']);
+    $stmt_select->execute();
+    $result = $stmt_select->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Exam not found.']);
+        return;
+    }
+
+    $original = $result->fetch_assoc();
+    $stmt_select->close();
+
+    // ✅ Step 2: Perform update
     $stmt = $conn->prepare("UPDATE exams SET subject_id = ?, lesson_id = ?, topic_id = ?, exam_title = ?, duration = ?, instructions = ?, total_marks = ?, pass_mark = ? WHERE id = ?");
-    $stmt->bind_param("iiisissdi", $data['subject_id'], $data['lesson_id'], $data['topic_id'], $data['exam_title'], $data['duration'], $data['instructions'], $data['total_marks'], $data['pass_mark'], $data['id']);
+    $stmt->bind_param(
+        "iiisissdi",
+        $data['subject_id'],
+        $data['lesson_id'],
+        $data['topic_id'],
+        $data['exam_title'],
+        $data['duration'],
+        $data['instructions'],
+        $data['total_marks'],
+        $data['pass_mark'],
+        $data['id']
+    );
+
     if ($stmt->execute()) {
+        // ✅ Step 3: Compare fields and prepare log message
+        $changes = [];
+
+        if ($data['exam_title'] !== $original['exam_title']) {
+            $changes[] = "Title: '" . $original['exam_title'] . "' → '" . $data['exam_title'] . "'";
+        }
+        if ($data['duration'] != $original['duration']) {
+            $changes[] = "Duration: " . $original['duration'] . " → " . $data['duration'] . " mins";
+        }
+        if ($data['instructions'] !== $original['instructions']) {
+            $changes[] = "Instructions updated";
+        }
+        if ($data['total_marks'] != $original['total_marks']) {
+            $changes[] = "Total Marks: " . $original['total_marks'] . " → " . $data['total_marks'];
+        }
+        if ($data['pass_mark'] != $original['pass_mark']) {
+            $changes[] = "Pass Mark: " . $original['pass_mark'] . " → " . $data['pass_mark'];
+        }
+        if ($data['subject_id'] != $original['subject_id']) {
+            $changes[] = "Subject ID: " . $original['subject_id'] . " → " . $data['subject_id'];
+        }
+        if ($data['lesson_id'] != $original['lesson_id']) {
+            $changes[] = "Lesson ID: " . $original['lesson_id'] . " → " . $data['lesson_id'];
+        }
+        if ($data['topic_id'] != $original['topic_id']) {
+            $changes[] = "Topic ID: " . $original['topic_id'] . " → " . $data['topic_id'];
+        }
+
+        if (!empty($changes)) {
+            $message = "Exam '" . $original['exam_title'] . "' (ID: " . $original['id'] . ") updated. Changes: " . implode("; ", $changes) . ".";
+            log_activity($conn, 'Exam Updated', $message);
+        }
+
         echo json_encode(['success' => true, 'message' => 'Exam updated successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to update exam.']);
     }
+
     $stmt->close();
 }
 
+
+// function delete_exam($conn) {
+//     $data = json_decode(file_get_contents('php://input'), true);
+//     $id = intval($data['id']);
+//     $stmt = $conn->prepare("DELETE FROM exams WHERE id = ?");
+//     $stmt->bind_param("i", $id);
+//     if ($stmt->execute()) {
+//         echo json_encode(['success' => true, 'message' => 'Exam deleted successfully.']);
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Failed to delete exam.']);
+//     }
+//     $stmt->close();
+// }
+
 function delete_exam($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
+
+    if (!isset($data['id'])) {
+        echo json_encode(['success' => false, 'message' => 'Exam ID not provided.']);
+        return;
+    }
+
     $id = intval($data['id']);
+
+    // ✅ Step 1: Fetch exam title before deleting
+    $stmt_select = $conn->prepare("SELECT exam_title FROM exams WHERE id = ?");
+    $stmt_select->bind_param("i", $id);
+    $stmt_select->execute();
+    $result = $stmt_select->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Exam not found.']);
+        $stmt_select->close();
+        return;
+    }
+
+    $row = $result->fetch_assoc();
+    $exam_title = $row['exam_title'];
+    $stmt_select->close();
+
+    // ✅ Step 2: Proceed to delete
     $stmt = $conn->prepare("DELETE FROM exams WHERE id = ?");
     $stmt->bind_param("i", $id);
+
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Exam deleted successfully.']);
+        if ($stmt->affected_rows > 0) {
+            $message = "Exam '" . $exam_title . "' (ID: " . $id . ") has been deleted successfully.";
+            log_activity($conn, 'Exam Deleted', $message);
+            echo json_encode(['success' => true, 'message' => 'Exam deleted successfully.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Exam not found or already deleted.']);
+        }
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete exam.']);
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
     }
+
     $stmt->close();
 }
+
 
 $conn->close();
 ?>
