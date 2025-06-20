@@ -32,20 +32,24 @@ function initializePerformanceReviewPage() {
             const isWrong = userAnswer !== null && !isCorrect;
             const correctOptionKey = q.answer;
 
-            // --- NEW: Logic to create the status badge ---
             let statusBadgeHTML = '';
             if (isCorrect) {
-                statusBadgeHTML = `<div class="flex items-center text-xs font-bold text-green-800 bg-green-100 px-3 py-1 rounded-full">
-                                       <span class="material-symbols-outlined text-base mr-1">check_circle</span> Correct Answer
-                                   </div>`;
+                statusBadgeHTML = `<div class="flex items-center text-xs font-bold text-green-800 bg-green-100 px-3 py-1 rounded-full"><span class="material-symbols-outlined text-base mr-1">check_circle</span> Correct Answer</div>`;
             } else if (isWrong) {
-                statusBadgeHTML = `<div class="flex items-center text-xs font-bold text-red-800 bg-red-100 px-3 py-1 rounded-full">
-                                       <span class="material-symbols-outlined text-base mr-1">cancel</span> Wrong Answer
-                                   </div>`;
+                statusBadgeHTML = `<div class="flex items-center text-xs font-bold text-red-800 bg-red-100 px-3 py-1 rounded-full"><span class="material-symbols-outlined text-base mr-1">cancel</span> Wrong Answer</div>`;
             } else {
-                statusBadgeHTML = `<div class="flex items-center text-xs font-bold text-gray-700 bg-gray-200 px-3 py-1 rounded-full">
-                                       <span class="material-symbols-outlined text-base mr-1">help</span> Unanswered
-                                   </div>`;
+                statusBadgeHTML = `<div class="flex items-center text-xs font-bold text-gray-700 bg-gray-200 px-3 py-1 rounded-full"><span class="material-symbols-outlined text-base mr-1">help</span> Unanswered</div>`;
+            }
+
+            // --- MODIFIED: Added explanationHTML block ---
+            let explanationHTML = '';
+            if (q.explanation) {
+                explanationHTML = `
+                    <div class="mt-4 pt-3 border-t border-gray-200">
+                        <p class="text-sm font-semibold text-gray-700">Explanation:</p>
+                        <p class="text-sm text-gray-600">${q.explanation}</p>
+                    </div>
+                `;
             }
 
             let questionCardHTML = `
@@ -65,22 +69,19 @@ function initializePerformanceReviewPage() {
                 let classes = 'flex items-center p-3 rounded-lg border';
                 let icon = '';
 
-                // Style the user's selected option
                 if (key === userAnswer) {
                     if(isCorrect) {
                         classes += ' bg-green-100 border-green-400 font-bold';
                         icon = '<span class="material-symbols-outlined text-green-600 mr-2">check_circle</span>';
-                    } else { // isWrong
+                    } else { 
                         classes += ' bg-red-100 border-red-400 font-bold';
                         icon = '<span class="material-symbols-outlined text-red-600 mr-2">cancel</span>';
                     }
                 } 
-                // Separately highlight the correct option if the user was wrong or didn't answer
                 else if (key === correctOptionKey) {
                     classes += ' bg-green-50 border-green-300';
                     icon = '<span class="material-symbols-outlined text-green-600 mr-2">check_circle</span>';
                 } 
-                // All other non-selected, non-correct options
                 else {
                     classes += ' bg-white';
                 }
@@ -88,7 +89,8 @@ function initializePerformanceReviewPage() {
                 questionCardHTML += `<div class="${classes}">${icon}<strong>${optionLabels[key]}.</strong><span class="ml-2">${value}</span></div>`;
             });
 
-            questionCardHTML += `</div></div>`;
+            // --- MODIFIED: Appended the explanation HTML ---
+            questionCardHTML += `</div>${explanationHTML}</div>`;
             container.innerHTML += questionCardHTML;
         });
     }

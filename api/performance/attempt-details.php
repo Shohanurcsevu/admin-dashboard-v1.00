@@ -1,7 +1,4 @@
 <?php
-// FILE: api/performance/attempt-details.php (Corrected)
-// This file is called when you click "Review" on the Check Performance page.
-
 require_once '../subject/db_connect.php';
 
 if (empty($_GET['attempt_id'])) {
@@ -23,7 +20,6 @@ if (!$performance) {
 }
 
 // 2. Get exam details
-// --- MODIFIED: Changed JOINs to LEFT JOINs to support exams with NULL topic_id ---
 $exam_sql = "SELECT e.*, s.subject_name, l.lesson_name, t.topic_name 
              FROM exams e 
              LEFT JOIN subjects s ON e.subject_id = s.id 
@@ -38,12 +34,13 @@ $exam = $exam_stmt->get_result()->fetch_assoc();
 $exam_stmt->close();
 
 if (!$exam) {
-    echo json_encode(['success' => false, 'message' => 'The associated exam could not be found. It may have been deleted.']);
+    echo json_encode(['success' => false, 'message' => 'The associated exam could not be found.']);
     exit;
 }
 
 // 3. Get all questions for that exam
-$q_stmt = $conn->prepare("SELECT id, question, options, answer FROM questions WHERE exam_id = ?");
+// --- MODIFIED: Added `explanation` to the SELECT statement ---
+$q_stmt = $conn->prepare("SELECT id, question, options, answer, explanation FROM questions WHERE exam_id = ?");
 $q_stmt->bind_param("i", $performance['exam_id']);
 $q_stmt->execute();
 $result = $q_stmt->get_result();
