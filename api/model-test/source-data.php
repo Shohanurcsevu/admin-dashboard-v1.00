@@ -1,6 +1,7 @@
 <?php
 require_once '../subject/db_connect.php';
 
+// --- MODIFIED: Changed ORDER BY to sort by ID instead of name ---
 $sql = "
     SELECT 
         s.id AS subject_id, 
@@ -8,17 +9,15 @@ $sql = "
         l.id AS lesson_id,
         l.lesson_name,
         l.py_bcs_ques,
-        COUNT(q.id) AS total_questions
+        (SELECT COUNT(*) FROM questions WHERE lesson_id = l.id) as total_questions
     FROM 
         subjects s
     LEFT JOIN 
         lessons l ON s.id = l.subject_id
-    LEFT JOIN 
-        questions q ON l.id = q.lesson_id
     GROUP BY 
         s.id, l.id
     ORDER BY 
-        s.subject_name, l.lesson_name;
+        s.id ASC, l.id ASC;
 ";
 
 $result = $conn->query($sql);
@@ -33,6 +32,7 @@ if ($result) {
                 'lessons' => []
             ];
         }
+        
         if ($row['lesson_id']) {
              $subjects[$row['subject_id']]['lessons'][] = [
                 'lesson_id' => $row['lesson_id'],
