@@ -2,6 +2,7 @@
 require_once 'subject/db_connect.php'; // Re-use the existing db connection
 
 // The main SQL query to fetch exams with all related details and question count
+// MODIFIED: Changed all JOINs to LEFT JOINs to include exams with NULL foreign keys
 $sql = "SELECT 
             e.id, 
             e.exam_title, 
@@ -12,9 +13,9 @@ $sql = "SELECT
             t.topic_name,
             (SELECT COUNT(*) FROM questions WHERE exam_id = e.id) as total_questions
         FROM exams e
-        JOIN subjects s ON e.subject_id = s.id
-        JOIN lessons l ON e.lesson_id = l.id
-        JOIN topics t ON e.topic_id = t.id";
+        LEFT JOIN subjects s ON e.subject_id = s.id
+        LEFT JOIN lessons l ON e.lesson_id = l.id
+        LEFT JOIN topics t ON e.topic_id = t.id";
 
 $params = [];
 $types = '';

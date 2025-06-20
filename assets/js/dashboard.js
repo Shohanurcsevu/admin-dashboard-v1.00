@@ -83,10 +83,15 @@ function initializeDashboardPage() {
             examCardsContainer.innerHTML = '';
             if (result.success && result.data.length > 0) {
                 result.data.forEach(exam => {
+                    // --- MODIFIED: Handle NULL values for breadcrumb ---
+                    const breadcrumb = exam.subject_name 
+                        ? `${exam.subject_name} > ${exam.lesson_name} > ${exam.topic_name}`
+                        : 'Custom Model Test';
+
                     const card = `
                         <div class="bg-white p-5 rounded-lg shadow-md flex flex-col hover:shadow-lg transition-shadow">
                             <h3 class="text-lg font-bold text-gray-800 truncate">${exam.exam_title}</h3>
-                            <p class="text-xs text-gray-500 mb-4 truncate">${exam.subject_name} > ${exam.lesson_name} > ${exam.topic_name}</p>
+                            <p class="text-xs text-gray-500 mb-4 truncate">${breadcrumb}</p>
                             <div class="flex-grow space-y-2 text-sm text-gray-600">
                                 <p class="flex items-center"><span class="material-symbols-outlined text-base mr-2">timer</span>${exam.duration} Minutes</p>
                                 <p class="flex items-center"><span class="material-symbols-outlined text-base mr-2">help</span>${exam.total_questions} Questions</p>
