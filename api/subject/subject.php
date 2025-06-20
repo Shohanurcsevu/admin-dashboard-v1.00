@@ -24,6 +24,13 @@ switch ($action) {
         echo json_encode(['success' => false, 'message' => 'Invalid action.']);
         break;
 }
+// Helper function to add to the activity log
+function log_activity($conn, $type, $message) {
+    $stmt = $conn->prepare("INSERT INTO activity_log (activity_type, activity_message) VALUES (?, ?)");
+    $stmt->bind_param("ss", $type, $message);
+    $stmt->execute();
+    $stmt->close();
+}
 
 // Function to get all subjects with a count of their lessons
 function list_subjects($conn) {
@@ -72,6 +79,9 @@ function create_subject($conn) {
     $stmt->bind_param("ssiisss", $data['subject_name'], $data['book_name'], $data['total_lessons'], $data['total_pages'], $data['start_date'], $data['end_date'], $data['category']);
     
     if ($stmt->execute()) {
+         // --- NEW: Log this activity ---
+        $message = "A new subject was created: '" . $data['subject_name'] . "'";
+        log_activity($conn, 'Subject Created', $message);
         echo json_encode(['success' => true, 'message' => 'Subject created successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
@@ -87,12 +97,43 @@ function update_subject($conn) {
     $stmt->bind_param("ssiisssi", $data['subject_name'], $data['book_name'], $data['total_lessons'], $data['total_pages'], $data['start_date'], $data['end_date'], $data['category'], $data['id']);
     
     if ($stmt->execute()) {
+        // --- NEW: Log this activity ---
+        $message = "'" . $data['subject_name'] . "' has been updated successfully.";
+        log_activity($conn, 'Subject Updated', $message);
         echo json_encode(['success' => true, 'message' => 'Subject updated successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
     }
     $stmt->close();
 }
+
+// Function to delete a subject
+// function delete_subject($conn) {
+//     $data = json_decode(file_get_contents('php://input'), true);
+
+//     if (!isset($data['id'])) {
+//         echo json_encode(['success' => false, 'message' => 'Subject ID not provided.']);
+//         return;
+//     }
+
+//     $id = intval($data['id']);
+//     $stmt = $conn->prepare("DELETE FROM subjects WHERE id = ?");
+//     $stmt->bind_param("i", $id);
+    
+//     if ($stmt->execute()) {
+//         if ($stmt->affected_rows > 0) {
+//                          // --- NEW: Log this activity ---
+//             $message = "Subject '" . $data['subject_name'] . "' (ID: " . $data['id'] . ") has been deleted successfully.";
+//             log_activity($conn, 'Subject Deleted', $message);
+//             echo json_encode(['success' => true, 'message' => 'Subject deleted successfully.']);
+//         } else {
+//             echo json_encode(['success' => false, 'message' => 'Subject not found or already deleted.']);
+//         }
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
+//     }
+//     $stmt->close();
+// }
 
 // Function to delete a subject
 function delete_subject($conn) {
@@ -104,11 +145,31 @@ function delete_subject($conn) {
     }
 
     $id = intval($data['id']);
+
+    // ✅ Step 1: Fetch subject name before deleting
+    $stmt_select = $conn->prepare("SELECT subject_name FROM subjects WHERE id = ?");
+    $stmt_select->bind_param("i", $id);
+    $stmt_select->execute();
+    $result = $stmt_select->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Subject not found.']);
+        return;
+    }
+
+    $row = $result->fetch_assoc();
+    $subject_name = $row['subject_name'];
+    $stmt_select->close();
+
+    // ✅ Step 2: Proceed to delete
     $stmt = $conn->prepare("DELETE FROM subjects WHERE id = ?");
     $stmt->bind_param("i", $id);
-    
+
     if ($stmt->execute()) {
         if ($stmt->affected_rows > 0) {
+            // ✅ Log activity with accurate subject name
+            $message = "Subject '" . $subject_name . "' (ID: " . $id . ") has been deleted successfully.";
+            log_activity($conn, 'Subject Deleted', $message);
             echo json_encode(['success' => true, 'message' => 'Subject deleted successfully.']);
         } else {
             echo json_encode(['success' => false, 'message' => 'Subject not found or already deleted.']);
@@ -116,8 +177,10 @@ function delete_subject($conn) {
     } else {
         echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
     }
+
     $stmt->close();
 }
+
 
 $conn->close();
 ?>

@@ -24,6 +24,14 @@ switch ($action) {
         break;
 }
 
+// Helper function to add to the activity log
+function log_activity($conn, $type, $message) {
+    $stmt = $conn->prepare("INSERT INTO activity_log (activity_type, activity_message) VALUES (?, ?)");
+    $stmt->bind_param("ss", $type, $message);
+    $stmt->execute();
+    $stmt->close();
+}
+
 function list_lessons($conn) {
     $subject_id = isset($_GET['subject_id']) ? intval($_GET['subject_id']) : 0;
 
@@ -76,6 +84,9 @@ function create_lesson($conn) {
     $stmt = $conn->prepare("INSERT INTO lessons (subject_id, lesson_name, expected_topics, start_page, end_page, py_bcs_ques) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("isiiii", $data['subject_id'], $data['lesson_name'], $data['expected_topics'], $data['start_page'], $data['end_page'], $data['py_bcs_ques']);
     if ($stmt->execute()) {
+                // --- NEW: Log this activity ---
+       $message = "Lesson '" . $data['lesson_name'] . "' was created successfully.";
+        log_activity($conn, 'Lesson Created', $message);
         echo json_encode(['success' => true, 'message' => 'Lesson created successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to create lesson.']);
@@ -88,6 +99,8 @@ function update_lesson($conn) {
     $stmt = $conn->prepare("UPDATE lessons SET subject_id = ?, lesson_name = ?, expected_topics = ?, start_page = ?, end_page = ?, py_bcs_ques = ? WHERE id = ?");
     $stmt->bind_param("isiiiii", $data['subject_id'], $data['lesson_name'], $data['expected_topics'], $data['start_page'], $data['end_page'], $data['py_bcs_ques'], $data['id']);
     if ($stmt->execute()) {
+         $message = "Lesson '" . $data['lesson_name'] . "' was updated successfully.";
+        log_activity($conn, 'Lesson Updated', $message);
         echo json_encode(['success' => true, 'message' => 'Lesson updated successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to update lesson.']);
@@ -98,13 +111,38 @@ function update_lesson($conn) {
 function delete_lesson($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
     $id = intval($data['id']);
+    // ✅ Step 1: Fetch lesson name before deleting
+    $stmt_select = $conn->prepare("SELECT lesson_name FROM lessons WHERE id = ?");
+    $stmt_select->bind_param("i", $id);
+    $stmt_select->execute();
+    $result = $stmt_select->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Lesson not found.']);
+        return;
+    }
+
+    $row = $result->fetch_assoc();
+    $lesson_name = $row['lesson_name'];
+    $stmt_select->close();
+      // ✅ Step 2: Proceed to delete
     $stmt = $conn->prepare("DELETE FROM lessons WHERE id = ?");
     $stmt->bind_param("i", $id);
+
+
     if ($stmt->execute()) {
+    if ($stmt->affected_rows > 0) {
+        // ✅ Log activity with accurate lesson name
+        $message = "Lesson '" . $lesson_name . "' (ID: " . $id . ") has been deleted successfully.";
+        log_activity($conn, 'Lesson Deleted', $message);
         echo json_encode(['success' => true, 'message' => 'Lesson deleted successfully.']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete lesson.']);
+        echo json_encode(['success' => false, 'message' => 'Lesson not found or already deleted.']);
     }
+} else {
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
+}
+
     $stmt->close();
 }
 

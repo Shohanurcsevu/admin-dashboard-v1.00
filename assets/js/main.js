@@ -5,6 +5,93 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerContainer = document.getElementById('header-container');
     const sidebarContainer = document.getElementById('sidebar-container');
 
+    // --- REVISED: Real-Time Notification Logic ---
+    function initializeNotifications() {
+        const notificationBtn = document.getElementById('notification-btn');
+        const notificationPanel = document.getElementById('notification-panel');
+        const notificationList = document.getElementById('notification-list');
+        const notificationDot = document.getElementById('notification-dot');
+
+        if (!notificationBtn || !notificationPanel || !notificationList) return;
+
+        let lastSeenId = 0;
+        let isPanelOpen = false;
+
+        const fetchAndRenderList = async () => {
+            try {
+                const response = await fetch('api/recent-activity.php');
+                const result = await response.json();
+
+                if (result.success && result.data.length > 0) {
+                    lastSeenId = result.data[0].id;
+                    notificationList.innerHTML = ''; 
+                    result.data.forEach(activity => {
+                        const iconMap = {
+                            'Subject Created': 'subject', 'Exam Taken': 'quiz', 'Lesson Updated': 'library_books',
+                            'Topic Created': 'topic', 'Exam Created': 'add_task', 'Questions Imported': 'upload_file'
+                        };
+                        const icon = iconMap[activity.activity_type] || 'notifications_active';
+                        
+                        // --- FIX: Replaced 'truncate' with 'break-words' to allow text wrapping ---
+                        const item = `
+                            <a href="#" class="block px-4 py-3 text-sm text-gray-600 hover:bg-gray-100">
+                                <p class="font-semibold text-gray-800 flex items-center">
+                                    <span class="material-symbols-outlined text-base mr-2">${icon}</span>
+                                    ${activity.activity_type}
+                                </p>
+                                <p class="pl-6 break-words">${activity.activity_message}</p>
+                                <p class="text-xs text-gray-400 mt-1 pl-6">${activity.time_ago}</p>
+                            </a>
+                        `;
+                        notificationList.innerHTML += item;
+                    });
+                } else {
+                     notificationList.innerHTML = '<p class="p-4 text-sm text-gray-500">No recent activity.</p>';
+                }
+            } catch (error) {
+                console.error("Failed to fetch notification list:", error);
+            }
+        };
+
+        const checkForNewNotifications = async () => {
+            if (isPanelOpen) return;
+            try {
+                const response = await fetch(`api/recent-activity.php?check_since=${lastSeenId}`);
+                const result = await response.json();
+                if (result.success && result.new_count > 0) {
+                    if (notificationDot) notificationDot.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Failed to check for new notifications:", error);
+            }
+        };
+        
+        notificationBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentlyHidden = notificationPanel.classList.contains('hidden');
+            
+            if (currentlyHidden) {
+                notificationPanel.classList.remove('hidden');
+                isPanelOpen = true;
+                if (notificationDot) notificationDot.classList.add('hidden');
+                fetchAndRenderList(); 
+            } else {
+                notificationPanel.classList.add('hidden');
+                isPanelOpen = false;
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!notificationPanel.contains(e.target) && !notificationBtn.contains(e.target)) {
+                notificationPanel.classList.add('hidden');
+                isPanelOpen = false;
+            }
+        });
+
+        setTimeout(checkForNewNotifications, 3000); 
+        setInterval(checkForNewNotifications, 15000);
+    }
+    
     const loadComponent = async (url, element) => {
         try {
             const response = await fetch(url);
@@ -16,26 +103,15 @@ document.addEventListener('DOMContentLoaded', () => {
             throw error;
         }
     };
-
+    
     const loadPageScript = (page) => {
         const existingScript = document.getElementById('page-specific-script');
         if (existingScript) existingScript.remove();
         const pageScripts = {
-            'dashboard': 'assets/js/dashboard.js',
-            'subject': 'assets/js/subject.js',
-            'lesson': 'assets/js/lesson.js',
-            'topic': 'assets/js/topic.js',
-            'exam': 'assets/js/exam.js',
-            'import-questions': 'assets/js/import-questions.js',
-            'questions-list': 'assets/js/questions-list.js',
-            'take-exam-list': 'assets/js/take-exam-list.js',
-            'take-exam-interface': 'assets/js/take-exam-interface.js',
-            'check-performance': 'assets/js/check-performance.js',
-            'performance-review': 'assets/js/performance-review.js',
-            'custom-exam-builder': 'assets/js/custom-exam-builder.js',
-            'custom-exam-topics': 'assets/js/custom-exam-topics.js',
-            'custom-exams': 'assets/js/custom-exams.js',
-            'custom-exam-from-lessons': 'assets/js/custom-exam-from-lessons.js',
+            'dashboard': 'assets/js/dashboard.js', 'subject': 'assets/js/subject.js', 'lesson': 'assets/js/lesson.js', 'topic': 'assets/js/topic.js', 'exam': 'assets/js/exam.js',
+            'import-questions': 'assets/js/import-questions.js', 'questions-list': 'assets/js/questions-list.js', 'take-exam-list': 'assets/js/take-exam-list.js',
+            'take-exam-interface': 'assets/js/take-exam-interface.js', 'check-performance': 'assets/js/check-performance.js', 'performance-review': 'assets/js/performance-review.js',
+            'custom-exam-builder': 'assets/js/custom-exam-builder.js', 'custom-exam-topics': 'assets/js/custom-exam-topics.js', 'custom-exams': 'assets/js/custom-exams.js',
             'model-test-builder': 'assets/js/model-test-builder.js'
         };
         if (pageScripts[page]) {
@@ -66,15 +142,9 @@ document.addEventListener('DOMContentLoaded', () => {
            }
            document.querySelectorAll('.nav-link').forEach(link => {
                const navLinkPage = link.dataset.page;
-               const parentPages = {
-                   'take-exam-interface': 'take-exam-list', 'performance-review': 'check-performance', 'questions-list': 'import-questions'
-               };
+               const parentPages = { 'take-exam-interface': 'take-exam-list', 'performance-review': 'check-performance', 'questions-list': 'import-questions' };
                const parentPage = parentPages[page];
-               if (navLinkPage === page || navLinkPage === parentPage) {
-                   link.classList.add('bg-gray-700');
-               } else {
-                   link.classList.remove('bg-gray-700');
-               }
+               link.classList.toggle('bg-gray-700', navLinkPage === page || navLinkPage === parentPage);
            });
            loadPageScript(page);
         } catch (e) {
@@ -90,6 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
             loadComponent('components/sidebar.html', sidebarContainer)
         ]);
         if (typeof initSidebarToggle === 'function') initSidebarToggle();
+        
+        initializeNotifications(); 
+        
         const initialParams = new URLSearchParams(window.location.search);
         const initialPage = initialParams.get('page') || 'dashboard';
         initialParams.delete('page');

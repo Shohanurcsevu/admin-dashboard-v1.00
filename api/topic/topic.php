@@ -24,6 +24,14 @@ switch ($action) {
         break;
 }
 
+// Helper function to add to the activity log
+function log_activity($conn, $type, $message) {
+    $stmt = $conn->prepare("INSERT INTO activity_log (activity_type, activity_message) VALUES (?, ?)");
+    $stmt->bind_param("ss", $type, $message);
+    $stmt->execute();
+    $stmt->close();
+}
+
 function list_topics($conn) {
     $subject_id = isset($_GET['subject_id']) ? intval($_GET['subject_id']) : 0;
     $lesson_id = isset($_GET['lesson_id']) ? intval($_GET['lesson_id']) : 0;
@@ -89,6 +97,8 @@ function create_topic($conn) {
     $stmt = $conn->prepare("INSERT INTO topics (subject_id, lesson_id, topic_name, start_page, end_page, expected_exams) VALUES (?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("iisiii", $data['subject_id'], $data['lesson_id'], $data['topic_name'], $data['start_page'], $data['end_page'], $data['expected_exams']);
     if ($stmt->execute()) {
+         $message = "Topic '" . $data['topic_name'] . "' has been created.";
+        log_activity($conn, 'Topic Created', $message);
         echo json_encode(['success' => true, 'message' => 'Topic created successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to create topic.']);
@@ -101,6 +111,9 @@ function update_topic($conn) {
     $stmt = $conn->prepare("UPDATE topics SET subject_id = ?, lesson_id = ?, topic_name = ?, start_page = ?, end_page = ?, expected_exams = ? WHERE id = ?");
     $stmt->bind_param("iisiiii", $data['subject_id'], $data['lesson_id'], $data['topic_name'], $data['start_page'], $data['end_page'], $data['expected_exams'], $data['id']);
     if ($stmt->execute()) {
+            // --- NEW: Log this activity ---
+       $message = "Topic '" . $data['topic_name'] . "' has been updated successfully.";
+        log_activity($conn, 'Topic Updated', $message);
         echo json_encode(['success' => true, 'message' => 'Topic updated successfully.']);
     } else {
         echo json_encode(['success' => false, 'message' => 'Failed to update topic.']);
@@ -108,18 +121,65 @@ function update_topic($conn) {
     $stmt->close();
 }
 
+// function delete_topic($conn) {
+//     $data = json_decode(file_get_contents('php://input'), true);
+//     $id = intval($data['id']);
+//     $stmt = $conn->prepare("DELETE FROM topics WHERE id = ?");
+//     $stmt->bind_param("i", $id);
+//     if ($stmt->execute()) {
+//         echo json_encode(['success' => true, 'message' => 'Topic deleted successfully.']);
+//     } else {
+//         echo json_encode(['success' => false, 'message' => 'Failed to delete topic.']);
+//     }
+//     $stmt->close();
+// }
+
 function delete_topic($conn) {
     $data = json_decode(file_get_contents('php://input'), true);
+
+    if (!isset($data['id'])) {
+        echo json_encode(['success' => false, 'message' => 'Topic ID not provided.']);
+        return;
+    }
+
     $id = intval($data['id']);
+
+    // ✅ Step 1: Fetch topic name before deleting
+    $stmt_select = $conn->prepare("SELECT topic_name FROM topics WHERE id = ?");
+    $stmt_select->bind_param("i", $id);
+    $stmt_select->execute();
+    $result = $stmt_select->get_result();
+
+    if ($result->num_rows === 0) {
+        echo json_encode(['success' => false, 'message' => 'Topic not found.']);
+        $stmt_select->close();
+        return;
+    }
+
+    $row = $result->fetch_assoc();
+    $topic_name = $row['topic_name'];
+    $stmt_select->close();
+
+    // ✅ Step 2: Proceed to delete
     $stmt = $conn->prepare("DELETE FROM topics WHERE id = ?");
     $stmt->bind_param("i", $id);
+
     if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Topic deleted successfully.']);
+        if ($stmt->affected_rows > 0) {
+            // ✅ Log activity with accurate topic name
+            $message = "Topic '" . $topic_name . "' (ID: " . $id . ") has been deleted.";
+            log_activity($conn, 'Topic Deleted', $message);
+            echo json_encode(['success' => true, 'message' => 'Topic deleted successfully.']);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'Topic not found or already deleted.']);
+        }
     } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete topic.']);
+        echo json_encode(['success' => false, 'message' => 'Error: ' . $stmt->error]);
     }
+
     $stmt->close();
 }
+
 
 $conn->close();
 ?>
