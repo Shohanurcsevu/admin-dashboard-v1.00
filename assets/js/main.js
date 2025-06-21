@@ -5,52 +5,63 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerContainer = document.getElementById('header-container');
     const sidebarContainer = document.getElementById('sidebar-container');
 
-    // --- REVISED: Real-Time Notification Logic ---
+    // --- Notification Logic with Debugging ---
     function initializeNotifications() {
+        console.log("Attempting to initialize notifications...");
+        
         const notificationBtn = document.getElementById('notification-btn');
         const notificationPanel = document.getElementById('notification-panel');
         const notificationList = document.getElementById('notification-list');
         const notificationDot = document.getElementById('notification-dot');
 
-        if (!notificationBtn || !notificationPanel || !notificationList) return;
+        if (!notificationBtn || !notificationPanel || !notificationList) {
+            console.error("Notification elements not found! Could not find #notification-btn, #notification-panel, or #notification-list. Aborting notification setup.");
+            return;
+        }
+        
+        console.log("Notification elements found. Setting up logic.");
 
         let lastSeenId = 0;
         let isPanelOpen = false;
+
+        const initializeLastSeenId = async () => {
+            try {
+                const response = await fetch('api/recent-activity.php');
+                const result = await response.json();
+                if (result.success && result.data.length > 0) {
+                    lastSeenId = result.data[0].id;
+                }
+            } catch (error) {
+                console.error("Failed to initialize last seen notification ID:", error);
+            }
+        };
 
         const fetchAndRenderList = async () => {
             try {
                 const response = await fetch('api/recent-activity.php');
                 const result = await response.json();
-
                 if (result.success && result.data.length > 0) {
                     lastSeenId = result.data[0].id;
                     notificationList.innerHTML = ''; 
                     result.data.forEach(activity => {
                         const iconMap = {
                             'Subject Created': 'subject', 'Exam Taken': 'quiz', 'Lesson Updated': 'library_books',
-                            'Topic Created': 'topic', 'Exam Created': 'add_task', 'Questions Imported': 'upload_file'
+                            'Topic Created': 'topic', 'Exam Created': 'add_task', 'Questions Imported': 'upload_file',
+                            'Model Test Created': 'auto_stories'
                         };
                         const icon = iconMap[activity.activity_type] || 'notifications_active';
-                        
-                        // --- FIX: Replaced 'truncate' with 'break-words' to allow text wrapping ---
                         const item = `
                             <a href="#" class="block px-4 py-3 text-sm text-gray-600 hover:bg-gray-100">
-                                <p class="font-semibold text-gray-800 flex items-center">
-                                    <span class="material-symbols-outlined text-base mr-2">${icon}</span>
-                                    ${activity.activity_type}
-                                </p>
+                                <p class="font-semibold text-gray-800 flex items-center"><span class="material-symbols-outlined text-base mr-2">${icon}</span>${activity.activity_type}</p>
                                 <p class="pl-6 break-words">${activity.activity_message}</p>
                                 <p class="text-xs text-gray-400 mt-1 pl-6">${activity.time_ago}</p>
-                            </a>
-                        `;
+                            </a>`;
                         notificationList.innerHTML += item;
                     });
                 } else {
                      notificationList.innerHTML = '<p class="p-4 text-sm text-gray-500">No recent activity.</p>';
                 }
-            } catch (error) {
-                console.error("Failed to fetch notification list:", error);
-            }
+            } catch (error) { console.error("Failed to fetch notification list:", error); }
         };
 
         const checkForNewNotifications = async () => {
@@ -61,15 +72,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (result.success && result.new_count > 0) {
                     if (notificationDot) notificationDot.classList.remove('hidden');
                 }
-            } catch (error) {
-                console.error("Failed to check for new notifications:", error);
-            }
+            } catch (error) { console.error("Failed to check for new notifications:", error); }
         };
         
         notificationBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const currentlyHidden = notificationPanel.classList.contains('hidden');
-            
             if (currentlyHidden) {
                 notificationPanel.classList.remove('hidden');
                 isPanelOpen = true;
@@ -82,16 +90,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.addEventListener('click', (e) => {
-            if (!notificationPanel.contains(e.target) && !notificationBtn.contains(e.target)) {
+            if (notificationPanel && !notificationPanel.contains(e.target) && !notificationBtn.contains(e.target)) {
                 notificationPanel.classList.add('hidden');
                 isPanelOpen = false;
             }
         });
-
-        setTimeout(checkForNewNotifications, 3000); 
-        setInterval(checkForNewNotifications, 15000);
+        
+        initializeLastSeenId().then(() => {
+            setInterval(checkForNewNotifications, 15000);
+        });
     }
     
+    // --- Page Loading Logic ---
     const loadComponent = async (url, element) => {
         try {
             const response = await fetch(url);
@@ -104,22 +114,33 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
     
-    const loadPageScript = (page) => {
+    const loadPageScript = async (page) => {
         const existingScript = document.getElementById('page-specific-script');
         if (existingScript) existingScript.remove();
+
         const pageScripts = {
-            'dashboard': 'assets/js/dashboard.js', 'subject': 'assets/js/subject.js', 'lesson': 'assets/js/lesson.js', 'topic': 'assets/js/topic.js', 'exam': 'assets/js/exam.js',
-            'import-questions': 'assets/js/import-questions.js', 'questions-list': 'assets/js/questions-list.js', 'take-exam-list': 'assets/js/take-exam-list.js',
-            'take-exam-interface': 'assets/js/take-exam-interface.js', 'check-performance': 'assets/js/check-performance.js', 'performance-review': 'assets/js/performance-review.js',
-            'custom-exam-builder': 'assets/js/custom-exam-builder.js', 'custom-exam-topics': 'assets/js/custom-exam-topics.js', 'custom-exams': 'assets/js/custom-exams.js',
-            'model-test-builder': 'assets/js/model-test-builder.js'
+            'dashboard': 'assets/js/dashboard.js', 'subject': 'assets/js/subject.js', 'lesson': 'assets/js/lesson.js', 
+            'topic': 'assets/js/topic.js', 'exam': 'assets/js/exam.js', 'import-questions': 'assets/js/import-questions.js',
+            'questions-list': 'assets/js/questions-list.js', 'take-exam-list': 'assets/js/take-exam-list.js',
+            'take-exam-interface': 'assets/js/take-exam-interface.js', 'check-performance': 'assets/js/check-performance.js',
+            'performance-review': 'assets/js/performance-review.js', 'custom-exam-builder': 'assets/js/custom-exam-builder.js',
+            'custom-exam-topics': 'assets/js/custom-exam-topics.js', 'custom-exams': 'assets/js/custom-exams.js',
+            'custom-exam-from-lessons': 'assets/js/custom-exam-from-lessons.js', 'model-test-builder': 'assets/js/model-test-builder.js'
         };
+
         if (pageScripts[page]) {
-            const script = document.createElement('script');
-            script.src = pageScripts[page];
-            script.id = 'page-specific-script';
-            script.defer = true;
-            document.body.appendChild(script);
+            try {
+                const response = await fetch(pageScripts[page]);
+                if (!response.ok) throw new Error(`Could not load script: ${pageScripts[page]}`);
+                const scriptContent = await response.text();
+                
+                const script = document.createElement('script');
+                script.id = 'page-specific-script';
+                script.textContent = scriptContent;
+                document.body.appendChild(script);
+            } catch (error) {
+                console.error(`Failed to execute page script for '${page}':`, error);
+            }
         }
     };
 
@@ -142,11 +163,14 @@ document.addEventListener('DOMContentLoaded', () => {
            }
            document.querySelectorAll('.nav-link').forEach(link => {
                const navLinkPage = link.dataset.page;
-               const parentPages = { 'take-exam-interface': 'take-exam-list', 'performance-review': 'check-performance', 'questions-list': 'import-questions' };
+               const parentPages = {
+                   'take-exam-interface': 'take-exam-list', 'performance-review': 'check-performance',
+                   'questions-list': 'import-questions'
+               };
                const parentPage = parentPages[page];
                link.classList.toggle('bg-gray-700', navLinkPage === page || navLinkPage === parentPage);
            });
-           loadPageScript(page);
+           await loadPageScript(page);
         } catch (e) {
             mainContent.innerHTML = `<p class="text-red-500 p-6 text-center"><b>404 Not Found:</b><br>Could not load page content for <b>'${page}'</b>.</p>`;
         }

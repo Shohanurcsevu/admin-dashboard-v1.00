@@ -1,8 +1,8 @@
 <?php
 require_once '../subject/db_connect.php';
 
-// --- MODIFIED: Changed all INNER JOINs to LEFT JOINs ---
-// This ensures that all exams are fetched, even if their subject, lesson, or topic IDs are NULL.
+// --- MODIFIED: Changed all LEFT JOINs to INNER JOINs ---
+// This ensures that only exams with a valid, non-null subject, lesson, AND topic are fetched.
 $sql = "SELECT 
             e.id, 
             e.exam_title, 
@@ -12,16 +12,15 @@ $sql = "SELECT
             t.topic_name,
             (SELECT COUNT(*) FROM questions WHERE exam_id = e.id) as total_questions
         FROM exams e
-        LEFT JOIN subjects s ON e.subject_id = s.id
-        LEFT JOIN lessons l ON e.lesson_id = l.id
-        LEFT JOIN topics t ON e.topic_id = t.id";
+        INNER JOIN subjects s ON e.subject_id = s.id
+        INNER JOIN lessons l ON e.lesson_id = l.id
+        INNER JOIN topics t ON e.topic_id = t.id";
 
 $params = [];
 $types = '';
 $where_clauses = [];
 
-// The UI filter logic remains the same and will work as expected.
-// If a filter is applied, it will correctly narrow down the results.
+// The UI filter logic remains the same
 if (!empty($_GET['subject_id'])) {
     $where_clauses[] = "e.subject_id = ?";
     $params[] = intval($_GET['subject_id']);

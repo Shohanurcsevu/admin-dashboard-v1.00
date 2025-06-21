@@ -12,9 +12,9 @@ if ($subject_id === 0) {
 $stmt = $conn->prepare("
     SELECT l.id, l.lesson_name, l.py_bcs_ques, COUNT(q.id) as total_questions 
     FROM lessons l
-    JOIN questions q ON l.id = q.lesson_id
+    LEFT JOIN questions q ON l.id = q.lesson_id
     WHERE l.subject_id = ?
-    GROUP BY l.id, l.lesson_name
+    GROUP BY l.id
     HAVING total_questions > 0
     ORDER BY l.lesson_name ASC
 ");

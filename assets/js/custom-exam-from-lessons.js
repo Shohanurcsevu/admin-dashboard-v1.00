@@ -1,8 +1,15 @@
-function initializeCustomExamFromLessonsPage() {
+/**
+ * Main initialization function for the Custom Exam from Lessons page.
+ * The main.js script ensures this entire file runs only after the page's HTML is fully loaded.
+ */
+function initializePage() {
+    
+    // --- API URLs ---
     const SUBJECT_API_URL = 'api/exam/subjects.php';
     const LESSON_API_URL = 'api/custom-exam/lessons.php';
     const CREATE_API_URL = 'api/custom-exam/from-lessons.php';
 
+    // --- DOM Elements ---
     const subjectFilter = document.getElementById('subject-filter');
     const sourceLessonsSection = document.getElementById('source-lessons-section');
     const sourceLessonsTableBody = document.getElementById('source-lessons-table-body');
@@ -10,7 +17,14 @@ function initializeCustomExamFromLessonsPage() {
     const customExamForm = document.getElementById('custom-exam-form');
     const toastContainer = document.getElementById('toast-container');
 
-    function showToast(message, type = 'success') {
+    // --- Guard Clause: Stop if essential elements are missing ---
+    if (!subjectFilter || !sourceLessonsSection || !customExamForm || !sourceLessonsTableBody) {
+        console.error("Fatal Error: A required element for this page was not found. Script will not run.");
+        return;
+    }
+
+    // --- Helper Functions ---
+    const showToast = (message, type = 'success') => {
         if (!toastContainer) return;
         const toast = document.createElement('div');
         let bgColor, icon;
@@ -22,9 +36,9 @@ function initializeCustomExamFromLessonsPage() {
         toast.innerHTML = `<span class="material-symbols-outlined mr-3">${icon}</span> ${message}`;
         toastContainer.appendChild(toast);
         setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s ease'; setTimeout(() => toast.remove(), 500); }, 3000);
-    }
+    };
 
-    async function populateSubjects() {
+    const populateSubjects = async () => {
         try {
             const response = await fetch(SUBJECT_API_URL);
             const result = await response.json();
@@ -33,11 +47,13 @@ function initializeCustomExamFromLessonsPage() {
                 result.data.forEach(subject => {
                     subjectFilter.innerHTML += `<option value="${subject.id}">${subject.subject_name}</option>`;
                 });
+            } else {
+                showToast('Failed to load subjects.', 'error');
             }
-        } catch (error) { console.error('Subject Dropdown Error:', error); }
-    }
+        } catch (error) { showToast('Network error fetching subjects.', 'error'); }
+    };
 
-    async function fetchAndDisplaySourceLessons() {
+    const fetchAndDisplaySourceLessons = async () => {
         const subjectId = subjectFilter.value;
         if (!subjectId || subjectId === '0') {
             sourceLessonsSection.classList.add('hidden');
@@ -46,7 +62,7 @@ function initializeCustomExamFromLessonsPage() {
         }
 
         sourceLessonsSection.classList.remove('hidden');
-        sourceLessonsTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4">Loading lessons...</td></tr>`;
+        sourceLessonsTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4">Loading lessons...</td></tr>`;
 
         try {
             const response = await fetch(`${LESSON_API_URL}?subject_id=${subjectId}`);
@@ -55,24 +71,25 @@ function initializeCustomExamFromLessonsPage() {
             if (result.success && result.data.length > 0) {
                 result.data.forEach(lesson => {
                     const row = `
-                        <tr class="border-b border-gray-200" data-lesson-id="${lesson.id}">
+                        <tr class="border-b" data-lesson-id="${lesson.id}">
                             <td class="py-3 px-6 text-left font-medium">${lesson.lesson_name}</td>
+                            <td class="py-3 px-6 text-center">${lesson.py_bcs_ques || 0}</td>
                             <td class="py-3 px-6 text-center">${lesson.total_questions}</td>
                             <td class="py-3 px-6 text-center">
-                                <input type="number" class="question-count-input w-24 text-center border border-gray-300 rounded-md" min="0" max="${lesson.total_questions}" placeholder="0">
+                                <input type="number" class="question-count-input w-24 text-center border border-gray-300 rounded-md" min="0" max="${lesson.total_questions}" placeholder="0" ${lesson.total_questions == 0 ? 'disabled' : ''}>
                             </td>
                         </tr>`;
                     sourceLessonsTableBody.innerHTML += row;
                 });
                 customExamFormSection.classList.remove('hidden');
             } else {
-                sourceLessonsTableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4">No lessons with questions found for this subject.</td></tr>`;
+                sourceLessonsTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4">No lessons with questions found for this subject.</td></tr>`;
                 customExamFormSection.classList.add('hidden');
             }
-        } catch (error) { showToast('Failed to load source lessons.', 'error'); }
-    }
+        } catch (error) { showToast('Failed to load lessons.', 'error'); }
+    };
 
-    async function handleFormSubmit(e) {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
         
         const source_lessons = [];
@@ -82,7 +99,7 @@ function initializeCustomExamFromLessonsPage() {
                 const count = parseInt(countInput.value, 10);
                 if (!isNaN(count) && count > 0) {
                     source_lessons.push({
-                        lesson_id: row.dataset.lessonId,
+                        lesson_id: row.getAttribute('data-lesson-id'),
                         question_count: count
                     });
                 }
@@ -110,7 +127,7 @@ function initializeCustomExamFromLessonsPage() {
             }
         }
         
-        const submitButton = customExamForm.querySelector('button[type="submit"]');
+        const submitButton = e.target.querySelector('button[type="submit"]');
         submitButton.disabled = true;
         submitButton.innerHTML = `<span class="material-symbols-outlined mr-2 animate-spin">autorenew</span>Creating...`;
 
@@ -123,8 +140,8 @@ function initializeCustomExamFromLessonsPage() {
             const result = await response.json();
             if (result.success) {
                 showToast(result.message, 'success');
-                customExamForm.reset();
-                fetchAndDisplaySourceLessons();
+                e.target.reset();
+                document.querySelectorAll('.question-count-input').forEach(input => input.value = '');
             } else {
                 showToast(result.message || 'An unknown error occurred.', 'error');
             }
@@ -133,11 +150,16 @@ function initializeCustomExamFromLessonsPage() {
             submitButton.disabled = false;
             submitButton.innerHTML = `<span class="material-symbols-outlined mr-2">layers</span>Create Exam from Lessons`;
         }
-    }
+    };
     
+    // --- Setup event listeners ---
     subjectFilter.addEventListener('change', fetchAndDisplaySourceLessons);
     customExamForm.addEventListener('submit', handleFormSubmit);
 
+    // --- Initial page load ---
     populateSubjects();
+    
 }
-initializeCustomExamFromLessonsPage();
+
+// Call the main function to start the page logic
+initializePage();
