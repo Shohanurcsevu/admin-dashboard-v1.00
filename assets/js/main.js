@@ -5,21 +5,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const headerContainer = document.getElementById('header-container');
     const sidebarContainer = document.getElementById('sidebar-container');
 
-    // --- Notification Logic with Debugging ---
+    // --- Notification Logic ---
     function initializeNotifications() {
-        console.log("Attempting to initialize notifications...");
-        
         const notificationBtn = document.getElementById('notification-btn');
         const notificationPanel = document.getElementById('notification-panel');
         const notificationList = document.getElementById('notification-list');
         const notificationDot = document.getElementById('notification-dot');
 
-        if (!notificationBtn || !notificationPanel || !notificationList) {
-            console.error("Notification elements not found! Could not find #notification-btn, #notification-panel, or #notification-list. Aborting notification setup.");
-            return;
-        }
-        
-        console.log("Notification elements found. Setting up logic.");
+        if (!notificationBtn || !notificationPanel || !notificationList) return;
 
         let lastSeenId = 0;
         let isPanelOpen = false;
@@ -155,6 +148,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         window.history.pushState({page, params}, '', url);
         
+        if (page === 'mcq-generator') {
+            const headerTitleElement = document.querySelector('#header-container h1');
+            if (headerTitleElement) headerTitleElement.textContent = "MCQ Generator";
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.toggle('bg-gray-700', link.dataset.page === page);
+            });
+            mainContent.innerHTML = `<iframe src="https://question.bcspreli.xyz/" class="w-full h-full border-0"></iframe>`;
+            return;
+        }
+        
         try {
            await loadComponent(`pages/${page}.html`, mainContent);
            const headerTitleElement = document.querySelector('#header-container h1');
@@ -163,10 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
            }
            document.querySelectorAll('.nav-link').forEach(link => {
                const navLinkPage = link.dataset.page;
-               const parentPages = {
-                   'take-exam-interface': 'take-exam-list', 'performance-review': 'check-performance',
-                   'questions-list': 'import-questions'
-               };
+               const parentPages = { 'take-exam-interface': 'take-exam-list', 'performance-review': 'check-performance', 'questions-list': 'import-questions' };
                const parentPage = parentPages[page];
                link.classList.toggle('bg-gray-700', navLinkPage === page || navLinkPage === parentPage);
            });
@@ -185,6 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ]);
         if (typeof initSidebarToggle === 'function') initSidebarToggle();
         
+        // --- FIX: The function to start the notification system is now being called. ---
         initializeNotifications(); 
         
         const initialParams = new URLSearchParams(window.location.search);

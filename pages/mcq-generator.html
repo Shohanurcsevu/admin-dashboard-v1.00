@@ -1,0 +1,60 @@
+<div class="bg-white p-6 rounded-lg shadow-xl w-full">
+    <!-- NEW: Navigation Menu -->
+    <div class="w-full mb-8 border-b border-gray-200">
+        <nav class="flex -mb-px space-x-6">
+            <button id="nav-text-extractor" class="py-4 px-1 border-b-2 font-semibold text-sm transition-colors duration-200 text-blue-600 border-blue-500">
+                Image to Text
+            </button>
+            <button id="nav-question-generator" class="py-4 px-1 border-b-2 font-semibold text-sm text-gray-500 hover:text-blue-500 transition-colors duration-200">
+                Generate Questions
+            </button>
+        </nav>
+    </div>
+
+    <!-- Main container for Text Extraction Section -->
+    <div id="text-extraction-section" class="w-full">
+        <div class="mb-6 w-full">
+            <label for="imageUploadInput" class="block text-gray-700 text-sm font-semibold mb-2">Upload Images (select multiple):</label>
+            <div id="dropZone" class="drop-zone mb-4"><p class="text-lg">Drag & drop images here</p><p class="text-sm">or</p><input type="file" id="imageUploadInput" accept="image/*" multiple class="hidden"><label for="imageUploadInput" class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md cursor-pointer transition duration-200 ease-in-out">Browse Files</label></div>
+            <p class="text-gray-500 text-sm text-center">Accepted formats: JPG, PNG, GIF, BMP, WebP</p>
+        </div>
+        <div id="imagePreviewsContainer" class="mb-6 w-full min-h-32 flex flex-wrap justify-center items-center gap-4 bg-gray-50 border border-gray-300 rounded-md p-4 overflow-auto hidden"><p id="noImageText" class="text-gray-500 text-center w-full">No images selected</p></div>
+        <div class="flex flex-col sm:flex-row gap-4 mb-6 w-full justify-center">
+            <button id="scanButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md flex items-center justify-center" disabled><span id="buttonText">Scan Images Text</span><div id="loadingSpinner" class="spinner ml-3 hidden"></div></button>
+            <button id="clearImageButton" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md" disabled>Clear Images</button>
+        </div>
+        <div id="scanProgressBarContainer" class="w-full hidden"><div class="progress-text" id="scanProgressText"></div><div class="progress-container"><div class="progress-bar" id="scanProgressBar"></div></div></div>
+        <div class="w-full mb-8">
+            <label for="outputText" class="block text-gray-700 text-sm font-semibold mb-2">Extracted & Organized Text (Editable):</label>
+            <div id="outputText" class="output-display" contenteditable="true" placeholder="Extracted text will appear here..."></div>
+            <button id="copyTextButton" class="mt-4 bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg w-full" disabled>Copy Text</button>
+        </div>
+    </div>
+    
+    <!-- Main container for MCQ Generation Section -->
+    <div id="mcq-generation-section" class="w-full hidden">
+        <div class="w-full mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Generate MCQs</h2>
+            <div class="mb-4 w-full"><label for="questionSampleInput" class="block text-gray-700 text-sm font-semibold mb-2">Question Sample (optional):</label><input type="text" id="questionSampleInput" placeholder="e.g., Who is the first president of Bangladesh?" class="w-full px-4 py-2 border border-gray-300 rounded-md"></div>
+            <div class="mb-4 w-full"><label for="numQuestionsInput" class="block text-gray-700 text-sm font-semibold mb-2">Number of Questions to Generate (optional):</label><input type="number" id="numQuestionsInput" min="1" placeholder="e.g., 10" class="w-full px-4 py-2 border border-gray-300 rounded-md"></div>
+            <div class="mb-4 w-full"><label for="questionLanguageSelect" class="block text-gray-700 text-sm font-semibold mb-2">Question Language:</label><select id="questionLanguageSelect" class="w-full px-4 py-2 border border-gray-300 rounded-md"><option value="auto">Auto-Detect (Recommended)</option><option value="english">English</option><option value="bangla">Bangla</option></select></div>
+            <div class="mb-4 w-full"><label for="keywordsInput" class="block text-gray-700 text-sm font-semibold mb-2">Focus on Topics/Keywords (optional):</label><input type="text" id="keywordsInput" placeholder="e.g., history, science, dates" class="w-full px-4 py-2 border border-gray-300 rounded-md"></div>
+            <div class="mb-4 w-full"><label for="difficultySelect" class="block text-gray-700 text-sm font-semibold mb-2">Difficulty Level:</label><select id="difficultySelect" class="w-full px-4 py-2 border border-gray-300 rounded-md"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></div>
+            <button id="generateQuestionsButton" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md flex items-center justify-center w-full mb-6" disabled><span id="generateButtonText">Generate Questions</span><div id="questionSpinner" class="spinner ml-3 hidden"></div></button>
+            <div id="genProgressBarContainer" class="w-full hidden"><div class="progress-text" id="genProgressText"></div><div class="progress-container"><div class="progress-bar" id="genProgressBar"></div></div></div>
+            <label class="block text-gray-700 text-sm font-semibold mb-2">Generated Questions (Review & Edit):</label>
+            <div id="mcqCountDisplay" class="text-sm text-gray-600 mb-2"></div>
+            <div id="mcqReviewContainer" class="w-full"><p id="noQuestionsText" class="text-gray-500 text-center">No questions generated yet.</p></div>
+        </div>
+        <div class="w-full">
+            <label for="questionsOutput" class="block text-gray-700 text-sm font-semibold mb-2">Raw JSON Output:</label>
+            <div id="questionsOutput" class="json-output-display" placeholder="Generated MCQs will appear here in JSON format..."></div>
+            <div class="flex flex-col sm:flex-row gap-4 mt-4 w-full">
+                <button id="copyQuestionsButton" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-2 px-4 rounded-lg flex-grow" disabled>Copy Questions</button>
+                <button id="exportCsvButton" class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg flex-grow" disabled>Export as CSV</button>
+            </div>
+        </div>
+    </div>
+    <div id="errorMessage" class="mt-4 text-red-600 text-sm hidden"></div>
+</div>
+<div id="croppingModal" class="modal hidden"><div class="modal-content"><h2 class="text-2xl font-bold text-gray-800 mb-4 text-center">Crop Image</h2><div class="img-container"><img id="imageToCrop" src="#"></div><div class="flex justify-center gap-4 mt-auto"><button id="applyCropButton" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg">Apply Crop</button><button id="cancelCropButton" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Cancel</button></div></div></div>
