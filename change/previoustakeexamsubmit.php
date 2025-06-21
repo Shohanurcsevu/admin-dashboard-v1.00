@@ -1,14 +1,6 @@
 <?php
 require_once '../subject/db_connect.php';
 
-// Helper function to add to the activity log
-function log_activity($conn, $type, $message) {
-    $stmt = $conn->prepare("INSERT INTO activity_log (activity_type, activity_message) VALUES (?, ?)");
-    $stmt->bind_param("ss", $type, $message);
-    $stmt->execute();
-    $stmt->close();
-}
-
 $data = json_decode(file_get_contents("php://input"), true);
 
 if (empty($data['exam_id']) || !isset($data['performance'])) {
@@ -20,7 +12,7 @@ $exam_id = intval($data['exam_id']);
 $performance = $data['performance'];
 
 // Get exam details to verify IDs
-$exam_stmt = $conn->prepare("SELECT subject_id, lesson_id, topic_id, exam_title FROM exams WHERE id = ?");
+$exam_stmt = $conn->prepare("SELECT subject_id, lesson_id, topic_id FROM exams WHERE id = ?");
 $exam_stmt->bind_param("i", $exam_id);
 $exam_stmt->execute();
 $exam_details = $exam_stmt->get_result()->fetch_assoc();
@@ -70,15 +62,12 @@ $stmt->bind_param("iiiiisddiiiii",
 );
 
 if ($stmt->execute()) {
+    // --- MODIFIED: Return the new performance record's ID ---
     $new_attempt_id = $conn->insert_id;
-    $performance['attempt_id'] = $new_attempt_id;
+    $performance['attempt_id'] = $new_attempt_id; // Add the new ID to the performance data
     $performance['attempt_number'] = $new_attempt_number;
     $performance['attempt_time'] = date('Y-m-d H:i:s');
-
-    // ✅ Log the submission activity
-    $exam_title = $exam_details['exam_title'] ?? 'Unknown Exam';
-    log_activity($conn, 'Exam Attempted', "Exam '{$exam_title}' submitted with score {$score_with_negative}");
-
+    
     echo json_encode([
         'success' => true, 
         'message' => 'Exam submitted successfully.',
