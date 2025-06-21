@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('bg-gray-700', link.dataset.page === page);
             });
-            mainContent.innerHTML = `<iframe src="https://question.bcspreli.xyz/" class="w-full h-full border-0"></iframe>`;
+            mainContent.innerHTML = `<iframe src="http://192.168.10.61/question/" class="w-full h-full border-0"></iframe>`;
             return;
         }
         
