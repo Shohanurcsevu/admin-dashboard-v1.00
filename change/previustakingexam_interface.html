@@ -1,5 +1,4 @@
 <div id="toast-container" class="fixed top-5 right-5 z-50"></div>
-
 <div id="exam-container" class="bg-white p-4 sm:p-6 rounded-lg shadow-md">
     <!-- Header -->
     <div class="border-b pb-4 mb-4">
@@ -29,17 +28,17 @@
     <div id="questions-area" class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Questions will be rendered here -->
     </div>
+    
+    <!-- Submission Footer -->
+    <div class="mt-8 pt-4 border-t flex justify-end">
+        <button id="submit-exam-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg flex items-center shadow-lg">
+            <span class="material-symbols-outlined mr-2">check_circle</span>
+            Submit Exam
+        </button>
+    </div>
 </div>
 
-<!-- --- Fixed Submit Button Footer --- -->
-<div class="fixed bottom-0 inset-x-0 p-4 bg-white shadow-md z-50 sm:static sm:mt-8 sm:pt-4 sm:border-t flex justify-center sm:justify-end">
-    <button id="submit-exam-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 sm:py-3 sm:px-8 rounded-lg flex items-center shadow-lg">
-        <span class="material-symbols-outlined mr-2">check_circle</span>
-        Submit Exam
-    </button>
-</div>
-
-<!-- --- Exam Result Modal --- -->
+<!-- --- NEW: Exam Result Modal --- -->
 <div id="result-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto">
         <div class="p-6 text-center">
@@ -52,18 +51,18 @@
             <div class="flex justify-between text-sm"><span class="text-gray-600">Attempt Time:</span><strong id="result-attempt-time" class="text-gray-800"></strong></div>
             <hr>
             <div class="flex justify-between text-sm"><span class="text-gray-600">Total Questions:</span><strong id="result-total-questions" class="text-gray-800"></strong></div>
-            <div class="flex justify-between text-sm"><span class="text-green-600">Correct Answers:</span><strong id="result-correct" class="text-green-600"></strong></div>
-            <div class="flex justify-between text-sm"><span class="text-red-600">Wrong Answers:</span><strong id="result-wrong" class="text-red-600"></strong></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-600 text-green-600">Correct Answers:</span><strong id="result-correct" class="text-green-600"></strong></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-600 text-red-600">Wrong Answers:</span><strong id="result-wrong" class="text-red-600"></strong></div>
             <div class="flex justify-between text-sm"><span class="text-gray-600">Unanswered:</span><strong id="result-unanswered" class="text-gray-800"></strong></div>
             <hr>
             <div class="flex justify-between text-sm"><span class="text-gray-600">Score (without negative):</span><strong id="result-score" class="text-gray-800"></strong></div>
             <div class="flex justify-between font-bold"><span class="text-gray-600">Final Score:</span><strong id="result-final-score" class="text-blue-600"></strong></div>
-            <hr>
+             <hr>
             <div class="flex justify-between text-xs"><span class="text-gray-500">Time Used:</span><strong id="result-time-used" class="text-gray-700"></strong></div>
             <div class="flex justify-between text-xs"><span class="text-gray-500">Time Left:</span><strong id="result-time-left" class="text-gray-700"></strong></div>
         </div>
         <div class="p-4 flex justify-end">
-            <button id="close-result-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Close</button>
+             <button id="close-result-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Close</button>
         </div>
     </div>
 </div>

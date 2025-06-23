@@ -44,7 +44,7 @@ if (!empty($where_clauses)) {
     $sql .= " WHERE " . implode(' AND ', $where_clauses);
 }
 
-$sql .= " GROUP BY e.id ORDER BY e.id DESC";
+$sql .= " GROUP BY e.id ORDER BY e.id ASC";
 
 $stmt = $conn->prepare($sql);
 

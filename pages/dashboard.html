@@ -6,25 +6,150 @@
             <p class="text-gray-500">A quick summary of your application's data.</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500"><div class="flex items-center"><div class="flex-shrink-0 bg-blue-500 rounded-md p-3"><span class="material-symbols-outlined text-white">subject</span></div><div class="ml-4 flex-1"><p class="text-sm font-medium text-gray-500 truncate">Total Subjects</p><p id="total-subjects" class="text-2xl font-bold text-gray-900">0</p></div></div></div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500"><div class="flex items-center"><div class="flex-shrink-0 bg-green-500 rounded-md p-3"><span class="material-symbols-outlined text-white">library_books</span></div><div class="ml-4 flex-1"><p class="text-sm font-medium text-gray-500 truncate">Total Lessons</p><p id="total-lessons" class="text-2xl font-bold text-gray-900">0</p></div></div></div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500"><div class="flex items-center"><div class="flex-shrink-0 bg-yellow-500 rounded-md p-3"><span class="material-symbols-outlined text-white">topic</span></div><div class="ml-4 flex-1"><p class="text-sm font-medium text-gray-500 truncate">Total Topics</p><p id="total-topics" class="text-2xl font-bold text-gray-900">0</p></div></div></div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500"><div class="flex items-center"><div class="flex-shrink-0 bg-purple-500 rounded-md p-3"><span class="material-symbols-outlined text-white">quiz</span></div><div class="ml-4 flex-1"><p class="text-sm font-medium text-gray-500 truncate">Total Exams</p><p id="total-exams" class="text-2xl font-bold text-gray-900">0</p></div></div></div>
-            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500"><div class="flex items-center"><div class="flex-shrink-0 bg-red-500 rounded-md p-3"><span class="material-symbols-outlined text-white">help_center</span></div><div class="ml-4 flex-1"><p class="text-sm font-medium text-gray-500 truncate">Total Questions</p><p id="total-questions" class="text-2xl font-bold text-gray-900">0</p></div></div></div>
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                        <span class="material-symbols-outlined text-white">subject</span>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-500 truncate">Total Subjects</p>
+                        <p id="total-subjects" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+                        <span class="material-symbols-outlined text-white">library_books</span>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-500 truncate">Total Lessons</p>
+                        <p id="total-lessons" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-yellow-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-yellow-500 rounded-md p-3">
+                        <span class="material-symbols-outlined text-white">topic</span>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-500 truncate">Total Topics</p>
+                        <p id="total-topics" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-purple-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-purple-500 rounded-md p-3">
+                        <span class="material-symbols-outlined text-white">quiz</span>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-500 truncate">Total Exams</p>
+                        <p id="total-exams" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
+                        <span class="material-symbols-outlined text-white">help_center</span>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <p class="text-sm font-medium text-gray-500 truncate">Total Questions</p>
+                        <p id="total-questions" class="text-2xl font-bold text-gray-900">0</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <hr/>
+
+    <hr />
+
     <!-- Section 2: Select Exam -->
     <div>
         <div class="mb-6">
             <h2 class="text-2xl font-bold text-gray-800">Select an Exam</h2>
             <p class="text-gray-500">Filter and choose an exam to start.</p>
         </div>
+
+        <!-- Filters -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 border rounded-lg bg-gray-50">
-            <div><label for="exam-subject-filter" class="block text-sm font-medium text-gray-700">Subject</label><select id="exam-subject-filter" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm"></select></div>
-            <div><label for="exam-lesson-filter" class="block text-sm font-medium text-gray-700">Lesson</label><select id="exam-lesson-filter" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm" disabled></select></div>
-            <div><label for="exam-topic-filter" class="block text-sm font-medium text-gray-700">Topic</label><select id="exam-topic-filter" class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm" disabled></select></div>
+            <div>
+                <label for="exam-subject-filter" class="block text-sm font-medium text-gray-700">Subject</label>
+                <select id="exam-subject-filter"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm"></select>
+            </div>
+            <div>
+                <label for="exam-lesson-filter" class="block text-sm font-medium text-gray-700">Lesson</label>
+                <select id="exam-lesson-filter"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm"
+                    disabled></select>
+            </div>
+            <div>
+                <label for="exam-topic-filter" class="block text-sm font-medium text-gray-700">Topic</label>
+                <select id="exam-topic-filter"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white rounded-md shadow-sm"
+                    disabled></select>
+            </div>
         </div>
-        <div id="exam-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+        <!-- Exam Cards Grid (Responsive Fix Applied Here) -->
+        <!-- Scrollable container -->
+        <div class="max-h-[600px] overflow-y-auto border rounded-md p-4 bg-gray-50">
+            <div id="exam-cards-container">
+                <!-- Cards injected here -->
+            </div>
+        </div>
+
+        <style>
+            #exam-cards-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1.5rem;
+            }
+
+            @media (max-width: 639px) {
+                #exam-cards-container {
+                    gap: 0.35rem;
+                    /* Smaller gap on mobile */
+                }
+            }
+
+            #exam-cards-container>div {
+                flex: 1 1 100%;
+                max-width: 100%;
+                box-sizing: border-box;
+
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                min-height: 10px;
+                background: white;
+                padding: 1.25rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 1px 3px rgb(0 0 0 / 0.1);
+                transition: box-shadow 0.3s ease;
+            }
+
+            #exam-cards-container>div:hover {
+                box-shadow: 0 4px 10px rgb(0 0 0 / 0.15);
+            }
+
+            @media (min-width: 640px) {
+                #exam-cards-container>div {
+                    flex: 1 1 calc(50% - 1.5rem);
+                    max-width: calc(50% - 1.5rem);
+                }
+            }
+
+            @media (min-width: 1024px) {
+                #exam-cards-container>div {
+                    flex: 1 1 calc(33.333% - 1.5rem);
+                    max-width: calc(33.333% - 1.5rem);
+                }
+            }
+        </style>
+
     </div>
 </div>
